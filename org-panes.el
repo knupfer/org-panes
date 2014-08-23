@@ -53,6 +53,11 @@
   "Face used for not used overview structures."
   :group 'org-panes)
 
+(defface org-panes-highlight-point-face
+  '((t (:weight ultrabold :foreground "red")))
+  "Face used for highlighting star at point."
+  :group 'org-panes)
+
 (defvar org-panes-all nil)
 (defvar org-panes-contents nil)
 (defvar org-panes-overview nil)
@@ -133,12 +138,14 @@ buffer is highlighted in the contents and overview buffer."
                      (not (equal org-panes-overview (get-buffer-window))))
             (with-selected-window org-panes-overview
               (goto-char pos)
-              (move-beginning-of-line nil)))
+              (move-beginning-of-line nil)
+              (recenter)))
           (when (and org-panes-contents
                      (not (equal org-panes-contents (get-buffer-window))))
             (with-selected-window org-panes-contents
               (goto-char pos)
-              (move-beginning-of-line nil)))
+              (move-beginning-of-line nil)
+              (recenter)))
           (redisplay)
           (when org-panes-all (with-selected-window org-panes-all
                                 (setq org-panes-min (window-start))
@@ -149,12 +156,10 @@ buffer is highlighted in the contents and overview buffer."
                                   (setq org-panes-max (1- (point))))))
           (when org-panes-contents (with-selected-window org-panes-contents
                                      (org-panes--remove-overlay)
-                                     (org-panes--make-overlay)
-                                     (recenter)))
+                                     (org-panes--make-overlay)))
           (when org-panes-overview (with-selected-window org-panes-overview
                                      (org-panes--remove-overlay)
-                                     (org-panes--make-overlay)
-                                     (recenter))))
+                                     (org-panes--make-overlay))))
       (org-panes-stop-panes))))
 
 (defun org-panes--make-overlay ()
@@ -170,7 +175,7 @@ buffer is highlighted in the contents and overview buffer."
       (setq b org-panes-max)
       (let ((ov (make-overlay (- p 2) (- p 1))))
         (overlay-put ov 'category 'org-panes-highlight)
-        (overlay-put ov 'face 'error))
+        (overlay-put ov 'face 'org-panes-highlight-point-face))
       (let ((ov (make-overlay (point-min) a)))
         (overlay-put ov 'category 'org-panes-highlight)
         (overlay-put ov 'face 'org-panes-non-highlight-face))
