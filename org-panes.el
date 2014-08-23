@@ -105,9 +105,15 @@ buffer is highlighted in the contents and overview buffer."
 (defun org-panes-stop-panes ()
   "Kill all panes and clean up."
   (when (and org-panes-contents (get-buffer org-panes-contents))
+    (let ((win (get-buffer-window org-panes-contents)))
+      (when win (with-selected-window win
+                  (org-panes--remove-overlay))))
     (kill-buffer org-panes-contents)
     (setq org-panes-contents nil))
   (when (and org-panes-overview (get-buffer org-panes-overview))
+    (let ((win (get-buffer-window org-panes-overview)))
+      (when win (with-selected-window win
+                  (org-panes--remove-overlay))))
     (kill-buffer org-panes-overview)
     (setq org-panes-overview nil))
   (setq org-panes-all nil)
