@@ -48,7 +48,7 @@
 (defvar org-panes-contents nil)
 (defvar org-panes-overview nil)
 
-(defun org-make-panes ()
+(defun org-panes ()
   (interactive)
   (if (not (equal major-mode 'org-mode))
       (error "this is not an org file")
