@@ -18,6 +18,14 @@
 
 ;; Author: Florian Knupfer
 
+;; This file provides a customizable `org-panes' function, which turns
+;; an org-file into a three pane view.  Thereby your movement of point
+;; is reflected in all panes and you can all three panes to navigate.
+;; In the overview and contents pane, the visible part of the show all
+;; pane is highlighted.  Visiting a non related buffer will
+;; automatically kill the panes and clean up.
+
+
 ;;; Code:
 
 (defgroup org-panes nil
