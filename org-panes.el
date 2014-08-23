@@ -23,7 +23,8 @@
 ;; is reflected in all panes and you can all three panes to navigate.
 ;; In the overview and contents pane, the visible part of the show all
 ;; pane is highlighted.  Visiting a non related buffer will
-;; automatically kill the panes and clean up.
+;; automatically kill the panes and clean up.  See following
+;; screenshot: http://i.imgur.com/jwKpKzp.png
 
 
 ;;; Code:
@@ -66,7 +67,7 @@ buffer is highlighted in the contents and overview buffer."
     (if (not org-panes-all)
         (progn
           (delete-other-windows)
-          (let* ((size (window-body-width)))
+          (let ((size (window-body-width)))
             (setq org-panes-all (buffer-name)
                   org-panes-contents (concat org-panes-all ":CONTENTS")
                   org-panes-overview (concat org-panes-all ":OVERVIEW"))
