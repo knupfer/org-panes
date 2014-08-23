@@ -33,6 +33,16 @@
   "show multiple panes of the document"
   :group 'org-mode)
 
+(defcustom org-panes-overview-depth 1
+  "Number of levels displayed in the overview buffer."
+  :group 'org-panes
+  :type 'integer)
+
+(defcustom org-panes-contents-depth 10
+  "Number of levels displayed in the contents buffer."
+  :group 'org-panes
+  :type 'integer)
+
 (defcustom org-panes-main-size 50
   "Percentage of the frame width used for the show all buffer."
   :group 'org-panes
@@ -87,11 +97,11 @@ buffer is highlighted in the contents and overview buffer."
             (split-window-right (/ (* size org-panes-contents-size) -100))
             (other-window -1)
             (clone-indirect-buffer org-panes-contents t)
-            (org-content)
+            (hide-sublevels org-panes-contents-depth)
             (setq-local cursor-in-non-selected-windows nil)
             (org-panes--make-overlay)
             (clone-indirect-buffer org-panes-overview t)
-            (org-overview)
+            (hide-sublevels org-panes-overview-depth)
             (setq-local cursor-in-non-selected-windows nil)
             (org-panes--make-overlay)
             (other-window -1)
