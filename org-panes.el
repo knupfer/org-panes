@@ -49,6 +49,9 @@
 (defvar org-panes-overview nil)
 
 (defun org-panes ()
+  "Make different panes for an org-mode file.  Current point is
+shared between the buffers and the visible part in the show all
+buffer is highlighted in the contents and overview buffer."
   (interactive)
   (if (not (equal major-mode 'org-mode))
       (error "this is not an org file")
@@ -83,6 +86,7 @@
       (org-panes-stop-panes))))
 
 (defun org-panes-stop-panes ()
+  "Kill all panes and clean up."
   (when (and org-panes-contents (get-buffer org-panes-contents))
     (kill-buffer org-panes-contents)
     (setq org-panes-contents nil))
@@ -95,6 +99,7 @@
   (message "org-panes killed"))
 
 (defun org-panes-move-point ()
+  "Share point and highlight."
   (unless (active-minibuffer-window)
     (if (or (equal (buffer-name) org-panes-all)
             (equal (buffer-name) org-panes-contents)
@@ -141,6 +146,7 @@
       (org-panes-stop-panes))))
 
 (defun org-panes--make-overlay ()
+  "Put the different overlays for highlighting."
   (save-excursion
     (goto-char org-panes-min)
     (move-beginning-of-line nil)
@@ -158,10 +164,12 @@
         (overlay-put ov 'face 'org-panes-non-highlight-face)))))
 
 (defun org-panes--remove-overlay ()
+  "Delete all overlays in current buffer."
   (dolist (ov (org-panes--active-overlays))
     (delete-overlay ov)))
 
 (defun org-panes--active-overlays ()
+  "Collect all overlays in current buffer."
   (let ((del-from (point-min))
         (del-to (point-max)))
     (delq nil (mapcar (lambda (ov)
