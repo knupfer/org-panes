@@ -24,7 +24,9 @@
 ;; In the overview and contents pane, the visible part of the show all
 ;; pane is highlighted.  Visiting a non related buffer will
 ;; automatically kill the panes and clean up.  See following
-;; screenshot: http://i.imgur.com/jwKpKzp.png
+;; screenshots:
+;; http://i.imgur.com/IHpX57b.png
+;; http://i.imgur.com/Zrhc7lG.png
 
 
 ;;; Code:
