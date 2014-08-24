@@ -103,7 +103,6 @@ buffer is highlighted in the contents and overview buffer."
             (show-all)
             (setq-local cursor-in-non-selected-windows nil))
           (add-hook 'post-command-hook 'org-panes-move-point)
-          (redisplay)
           (message "org-panes created"))
       (org-panes-stop-panes))))
 
@@ -178,7 +177,8 @@ buffer is highlighted in the contents and overview buffer."
                                      (org-panes--remove-overlay)
                                      (org-panes-center)
                                      (org-panes--make-overlay))))
-      (org-panes-stop-panes))))
+      (when (not (equal "*Org Src" (substring (buffer-name) 0 8)))
+        (org-panes-stop-panes)))))
 
 (defun org-panes-center ()
   (let ((len 0)
