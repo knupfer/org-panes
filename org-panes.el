@@ -80,7 +80,6 @@ contents buffer."
 (defvar org-panes-min)
 (defvar org-panes-max)
 
-
 (defun org-panes ()
   "Make different panes for an org-mode file.  Current point is
 shared between the buffers and the visible part in the show all
@@ -157,6 +156,7 @@ buffer is highlighted in the contents and overview buffer."
             (equal (buffer-name) org-panes-contents)
             (equal (buffer-name) org-panes-overview))
         (when (org-panes-changed-p)
+          (redisplay)
           (let ((pos (point))
                 (org-panes-all (get-buffer-window org-panes-all))
                 (org-panes-overview (get-buffer-window org-panes-overview))
@@ -199,7 +199,9 @@ buffer is highlighted in the contents and overview buffer."
                                        (org-panes--remove-overlay)
                                        (org-panes-center)
                                        (org-panes--make-overlay)))))
-      (when (not (equal "*Org Src" (substring (buffer-name) 0 8)))
+      (when (not (equal "*Org Src"
+                        (substring (buffer-name) 0
+                                   (min (length (buffer-name)) 8))))
         (org-panes-stop-panes)))))
 
 (defun org-panes-changed-p ()
@@ -210,7 +212,8 @@ buffer is highlighted in the contents and overview buffer."
           (let ((p (point)))
             (setq org-panes-change-string nil)
             (goto-char (window-start))
-            (while (re-search-forward "^\\(*+\\) .." (max (point) (window-end)) t)
+            (while (re-search-forward "^\\(*+\\) .." (max (point)
+                                                          (window-end)) t)
               (setq org-panes-change-string
                     (concat org-panes-change-string (match-string 0)
                             (when (and (= (length (match-string 1)) 1)
