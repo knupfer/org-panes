@@ -43,13 +43,21 @@
   :group 'org-panes
   :type 'integer)
 
+(defcustom org-panes-split-overview-horizontally nil
+  "Change the split behaviour of the overview and the contents
+buffer.  The show all buffer is always split vertically because
+of the bigger space needs."
+  :group 'org-panes
+  :type 'boolean)
+
 (defcustom org-panes-main-size 50
   "Percentage of the frame width used for the show all buffer."
   :group 'org-panes
   :type 'integer)
 
-(defcustom org-panes-contents-size 30
-  "Percentage of the frame width used for the contents buffer."
+(defcustom org-panes-contents-size 60
+  "Percentage of the remaining frame width/height used for the
+contents buffer."
   :group 'org-panes
   :type 'integer)
 
@@ -77,7 +85,8 @@ buffer is highlighted in the contents and overview buffer."
     (if (not org-panes-all)
         (progn
           (delete-other-windows)
-          (let ((size (window-body-width)))
+          (let ((size (window-body-width))
+		(height (window-body-height)))
             (setq org-panes-all (buffer-name)
                   org-panes-contents (concat org-panes-all ":CONTENTS")
                   org-panes-overview (concat org-panes-all ":OVERVIEW"))
@@ -89,7 +98,10 @@ buffer is highlighted in the contents and overview buffer."
               (forward-line (window-body-height))
               (setq org-panes-max (1- (point))))
             (split-window-right (/ (* size org-panes-main-size) -100))
-            (split-window-right (/ (* size org-panes-contents-size) -100))
+            (if org-panes-split-overview-horizontally
+                (split-window-below)
+              (split-window-right (/ (* size
+                                        org-panes-contents-size) -200)))
             (other-window -1)
             (clone-indirect-buffer org-panes-contents t)
             (hide-sublevels org-panes-contents-depth)
@@ -97,6 +109,9 @@ buffer is highlighted in the contents and overview buffer."
             (org-panes--make-overlay)
             (clone-indirect-buffer org-panes-overview t)
             (hide-sublevels org-panes-overview-depth)
+            (if org-panes-split-overview-horizontally
+                (window-resize nil (+ (/ (* height org-panes-contents-size)
+                                         -100) (/ height 2))))
             (setq-local cursor-in-non-selected-windows nil)
             (org-panes--make-overlay)
             (other-window -1)
