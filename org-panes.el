@@ -53,19 +53,14 @@
   :group 'org-panes
   :type 'integer)
 
-(defface org-panes-highlight-face
-  '((t (:weight ultrabold)))
-  "Face used for highlighted overview structures."
-  :group 'org-panes)
-
-(defface org-panes-non-highlight-face
-  '((t (:weight ultralight)))
+(defface org-panes-hide-tree-face
+  '((t (:inherit font-lock-comment-face)))
   "Face used for not used overview structures."
   :group 'org-panes)
 
-(defface org-panes-highlight-point-face
-  '((t (:weight ultrabold :foreground "red")))
-  "Face used for highlighting star at point."
+(defface org-panes-highlight-window-face
+  '((t (:inherit error)))
+  "Face used for highlighting stars to indicate visible region."
   :group 'org-panes)
 
 (defvar org-panes-all nil)
@@ -197,42 +192,36 @@ buffer is highlighted in the contents and overview buffer."
     (overlay-put ov 'category 'org-panes-highlight)
     (when (< len (window-body-height))
       (setq len (/ (- (window-body-height) len) 2))
-      (overlay-put ov 'before-string (make-string len (string-to-char "\n"))))))
+      (overlay-put ov 'before-string
+                   (make-string len (string-to-char "\n"))))))
 
 (defun org-panes--make-overlay ()
   "Put the different overlays for highlighting."
   (save-excursion
-    (let (a b p)
-      (move-beginning-of-line nil)
-      (re-search-forward " " nil t)
-      (setq p (point))
-      (move-beginning-of-line nil)
-      (setq a (min p org-panes-min))
-      (setq b (max p org-panes-max))
-      (let ((ov (make-overlay (- p 2) (- p 1))))
-        (overlay-put ov 'category 'org-panes-highlight)
-        (overlay-put ov 'face 'org-panes-highlight-point-face))
-      (forward-char 5);;aea tia
-      (when (re-search-backward "^* " nil t)
-        (let ((pos (point)))
-          (goto-char (point-min))
-          (while (re-search-forward "^*+ " pos t)
-            (let ((ov (make-overlay (point) (progn (end-of-line)
-                                                   (point)))))
-              (overlay-put ov 'category 'org-panes-highlight)
-              (overlay-put ov 'face 'font-lock-comment-face)))))
-      (let ((ov (make-overlay a b)))
-        (overlay-put ov 'category 'org-panes-highlight)
-        (overlay-put ov 'face 'org-panes-highlight-face))
+    (let ((a (min (point) org-panes-min))
+          (b (max (point) org-panes-max))
+          (tree-start (point-min))
+          (tree-end (point-max)))
+      (end-of-line)
+      (re-search-backward "^* " nil t)
+      (setq tree-start (point))
       (when (and (re-search-forward "^* " nil t)
                  (re-search-forward "^* " nil t))
-        (move-beginning-of-line nil)
-        (let ((pos (point-max)))
-          (while (re-search-forward "^*+ " pos t)
-            (let ((ov (make-overlay (point) (progn (end-of-line)
-                                                   (point)))))
+        (setq tree-end (progn (beginning-of-line)
+                              (point))))
+      (goto-char (point-min))
+      (while (re-search-forward "^*+ " nil t)
+        (let ((p (point)))
+          (when (and (> p a) (< p b))
+            (let ((ov (make-overlay (- p 2) (- p 1))))
               (overlay-put ov 'category 'org-panes-highlight)
-              (overlay-put ov 'face 'font-lock-comment-face))))))))
+              (overlay-put ov 'face 'org-panes-highlight-window-face)))
+          (when (or (< p tree-start)
+                    (> p tree-end))
+            (let ((ov (make-overlay p (progn (end-of-line)
+                                             (point)))))
+              (overlay-put ov 'category 'org-panes-highlight)
+              (overlay-put ov 'face 'org-panes-hide-tree-face))))))))
 
 (defun org-panes--remove-overlay ()
   "Delete all overlays in current buffer."
