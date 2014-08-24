@@ -210,7 +210,7 @@ buffer is highlighted in the contents and overview buffer."
           (let ((p (point)))
             (setq org-panes-change-string nil)
             (goto-char (window-start))
-            (while (re-search-forward "^\\(*+\\) .." (window-end) t)
+            (while (re-search-forward "^\\(*+\\) .." (max (point) (window-end)) t)
               (setq org-panes-change-string
                     (concat org-panes-change-string (match-string 0)
                             (when (and (= (length (match-string 1)) 1)
