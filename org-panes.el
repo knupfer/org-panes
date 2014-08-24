@@ -76,8 +76,10 @@ contents buffer."
 (defvar org-panes-all nil)
 (defvar org-panes-contents nil)
 (defvar org-panes-overview nil)
+(defvar org-panes-change-string nil)
 (defvar org-panes-min)
 (defvar org-panes-max)
+
 
 (defun org-panes ()
   "Make different panes for an org-mode file.  Current point is
@@ -90,7 +92,7 @@ buffer is highlighted in the contents and overview buffer."
         (progn
           (delete-other-windows)
           (let ((size (window-body-width))
-		(height (window-body-height)))
+                (height (window-body-height)))
             (setq org-panes-all (buffer-name)
                   org-panes-contents (concat org-panes-all ":CONTENTS")
                   org-panes-overview (concat org-panes-all ":OVERVIEW"))
@@ -154,50 +156,69 @@ buffer is highlighted in the contents and overview buffer."
     (if (or (equal (buffer-name) org-panes-all)
             (equal (buffer-name) org-panes-contents)
             (equal (buffer-name) org-panes-overview))
-        (let ((pos (point))
-              (org-panes-all (get-buffer-window org-panes-all))
-              (org-panes-overview (get-buffer-window org-panes-overview))
-              (org-panes-contents (get-buffer-window org-panes-contents)))
-          (save-excursion (move-beginning-of-line nil)
-                          (setq pos (point)))
-          (when (and org-panes-all
-                     (not (equal org-panes-all (get-buffer-window))))
-            (progn
-              (with-selected-window org-panes-all
+        (when (org-panes-changed-p)
+          (let ((pos (point))
+                (org-panes-all (get-buffer-window org-panes-all))
+                (org-panes-overview (get-buffer-window org-panes-overview))
+                (org-panes-contents (get-buffer-window org-panes-contents)))
+            (save-excursion (move-beginning-of-line nil)
+                            (setq pos (point)))
+            (when (and org-panes-all
+                       (not (equal org-panes-all (get-buffer-window))))
+              (progn
+                (with-selected-window org-panes-all
+                  (goto-char pos)
+                  (move-beginning-of-line nil)
+                  (set-window-start nil (point)))))
+            (when (and org-panes-overview
+                       (not (equal org-panes-overview (get-buffer-window))))
+              (with-selected-window org-panes-overview
                 (goto-char pos)
                 (move-beginning-of-line nil)
-                (set-window-start nil (point)))))
-          (when (and org-panes-overview
-                     (not (equal org-panes-overview (get-buffer-window))))
-            (with-selected-window org-panes-overview
-              (goto-char pos)
-              (move-beginning-of-line nil)
-              (recenter)))
-          (when (and org-panes-contents
-                     (not (equal org-panes-contents (get-buffer-window))))
-            (with-selected-window org-panes-contents
-              (goto-char pos)
-              (move-beginning-of-line nil)
-              (recenter)))
-          (when org-panes-all (with-selected-window org-panes-all
-                                (setq org-panes-min (window-start))
-                                (save-excursion
-                                  (goto-char org-panes-min)
-                                  (beginning-of-line)
-                                  (forward-line (window-body-height))
-                                  (setq org-panes-max (1- (point))))
-                                (org-panes--remove-overlay)
-                                (org-panes-center)))
-          (when org-panes-contents (with-selected-window org-panes-contents
-                                     (org-panes--remove-overlay)
-                                     (org-panes-center)
-                                     (org-panes--make-overlay)))
-          (when org-panes-overview (with-selected-window org-panes-overview
-                                     (org-panes--remove-overlay)
-                                     (org-panes-center)
-                                     (org-panes--make-overlay))))
+                (recenter)))
+            (when (and org-panes-contents
+                       (not (equal org-panes-contents (get-buffer-window))))
+              (with-selected-window org-panes-contents
+                (goto-char pos)
+                (move-beginning-of-line nil)
+                (recenter)))
+            (when org-panes-all (with-selected-window org-panes-all
+                                  (setq org-panes-min (window-start))
+                                  (save-excursion
+                                    (goto-char org-panes-min)
+                                    (beginning-of-line)
+                                    (forward-line (window-body-height))
+                                    (setq org-panes-max (1- (point))))
+                                  (org-panes--remove-overlay)
+                                  (org-panes-center)))
+            (when org-panes-contents (with-selected-window org-panes-contents
+                                       (org-panes--remove-overlay)
+                                       (org-panes-center)
+                                       (org-panes--make-overlay)))
+            (when org-panes-overview (with-selected-window org-panes-overview
+                                       (org-panes--remove-overlay)
+                                       (org-panes-center)
+                                       (org-panes--make-overlay)))))
       (when (not (equal "*Org Src" (substring (buffer-name) 0 8)))
         (org-panes-stop-panes)))))
+
+(defun org-panes-changed-p ()
+  (let ((old-string org-panes-change-string))
+    (save-excursion
+      (end-of-line)
+      (let ((p (point)))
+        (setq org-panes-change-string nil)
+        (goto-char (window-start))
+        (while (re-search-forward "^\\(*+\\) ..." (window-end) t)
+          (setq org-panes-change-string
+                (concat org-panes-change-string (match-string 0)
+                        (when (and (or (equal (buffer-name)
+                                              org-panes-contents)
+                                       (= (length (match-string 1)) 1))
+                                   (> (match-end 0) p)) "P"))))))
+    (setq org-panes-change-string
+          (substring-no-properties org-panes-change-string))
+    (unless (equal old-string org-panes-change-string) t)))
 
 (defun org-panes-center ()
   (let ((len 0)
