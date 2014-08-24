@@ -76,6 +76,8 @@ contents buffer."
 (defvar org-panes-all nil)
 (defvar org-panes-contents nil)
 (defvar org-panes-overview nil)
+(defvar org-panes-min)
+(defvar org-panes-max)
 
 (defun org-panes ()
   "Make different panes for an org-mode file.  Current point is
