@@ -215,8 +215,9 @@ buffer is highlighted in the contents and overview buffer."
                     (concat org-panes-change-string (match-string 0)
                             (when (and (= (length (match-string 1)) 1)
                                        (> (match-end 0) p)) "P")))))
-          (setq org-panes-change-string
-                (substring-no-properties org-panes-change-string)))
+          (when org-panes-change-string
+            (setq org-panes-change-string
+                  (substring-no-properties org-panes-change-string))))
       (setq org-panes-change-string (line-number-at-pos)))
     (unless (equal old-string org-panes-change-string) t)))
 
