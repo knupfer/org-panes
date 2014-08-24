@@ -121,10 +121,17 @@ buffer is highlighted in the contents and overview buffer."
             (org-panes--make-overlay)
             (other-window -1)
             (show-all)
-            (setq-local cursor-in-non-selected-windows nil))
+            (setq-local cursor-in-non-selected-windows nil)
+            (add-hook 'post-command-hook 'org-panes-persist nil t))
           (add-hook 'post-command-hook 'org-panes-move-point)
           (message "org-panes created"))
+      (remove-hook 'post-command-hook 'org-panes-persist t)
       (org-panes-stop-panes))))
+
+(defun org-panes-persist ()
+  (when (not org-panes-all)
+    (remove-hook 'post-command-hook 'org-panes-persist t)
+    (org-panes)))
 
 (defun org-panes-stop-panes ()
   "Kill all panes and clean up."
