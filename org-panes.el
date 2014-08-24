@@ -175,6 +175,15 @@ buffer is highlighted in the contents and overview buffer."
                                      (org-panes--make-overlay)))
           (when org-panes-overview (with-selected-window org-panes-overview
                                      (org-panes--remove-overlay)
+                                     (let ((len 1)
+                                           (ov (make-overlay 1 1)))
+                                       (save-excursion (goto-char (point-min))
+                                                       (while (re-search-forward "^* " nil t)
+                                                         (setq len (+ len 1))))
+                                       (overlay-put ov 'category 'org-panes-highlight)
+                                       (when (< len (window-body-height))
+                                         (setq len (/ (- (window-body-height) len) 2))
+                                         (overlay-put ov 'before-string (make-string len (string-to-char "\n")))))
                                      (org-panes--make-overlay))))
       (org-panes-stop-panes))))
 
