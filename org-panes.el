@@ -218,10 +218,11 @@ buffer is highlighted in the contents and overview buffer."
                 (org-panes--remove-overlay)
                 (org-panes-center)
                 (let  ((pos (org-panes--make-overlay)))
-                  (recenter (round (- (min (* (window-body-height) 0.5)
-                                           (car pos))
+                  (recenter (round (- (min (* 0.5 (window-body-height)
+                                              (/ (float (car pos))
+                                                 (cadr pos))) (car pos))
                                       (/ (+ (window-body-height)
-                                            (min (* (window-body-height) 0.5)
+                                            (min (* 0.5 (window-body-height))
                                                  (cadr pos))) 2)))))))
             (when org-panes-overview (with-selected-window org-panes-overview
                                        (org-panes--remove-overlay)
@@ -231,11 +232,6 @@ buffer is highlighted in the contents and overview buffer."
                         (substring (buffer-name) 0
                                    (min (length (buffer-name)) 8))))
         (org-panes-stop-panes)))))
-
-(defun org-panes-calc-pos ()
-  (let ((pos (org-panes--make-overlay)))
-    (recenter (round (/ (float (car pos))
-                        (cadr pos))))))
 
 (defun org-panes-changed-p ()
   (let ((old-string org-panes-change-string))
