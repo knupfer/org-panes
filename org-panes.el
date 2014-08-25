@@ -58,6 +58,12 @@ be able to center point even when there aren't enough headings."
   :group 'org-panes
   :type 'boolean)
 
+(defcustom org-panes-persist-panes t
+  "When non-nil create automatically new panes when revisiting
+buffer unless org-panes is called another time."
+  :group 'org-panes
+  :type 'boolean)
+
 (defcustom org-panes-main-size 50
   "Percentage of the frame width used for the show all buffer."
   :group 'org-panes
@@ -128,7 +134,8 @@ buffer is highlighted in the contents and overview buffer."
             (other-window -1)
             (show-all)
             (setq-local cursor-in-non-selected-windows nil)
-            (add-hook 'post-command-hook 'org-panes-persist nil t))
+            (when org-panes-persist-panes
+              (add-hook 'post-command-hook 'org-panes-persist nil t)))
           (add-hook 'post-command-hook 'org-panes-move-point)
           (message "org-panes created"))
       (remove-hook 'post-command-hook 'org-panes-persist t)
