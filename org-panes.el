@@ -52,6 +52,12 @@ of the bigger space needs."
   :group 'org-panes
   :type 'boolean)
 
+(defcustom org-panes-force-centering-text-vertically t
+  "When non-nil adds padding to overview and contents buffer to
+be able to center point even when there aren't enough headings."
+  :group 'org-panes
+  :type 'boolean)
+
 (defcustom org-panes-main-size 50
   "Percentage of the frame width used for the show all buffer."
   :group 'org-panes
@@ -232,19 +238,20 @@ buffer is highlighted in the contents and overview buffer."
     (unless (equal old-string org-panes-change-string) t)))
 
 (defun org-panes-center ()
-  (let ((len 0)
-        (ov (make-overlay 0 0))
-        (pos -1))
-    (save-excursion (goto-char (point-min))
-                    (while (> (point) pos)
-                      (setq len (+ len 1)
-                            pos (point))
-                      (forward-visible-line 1)))
-    (overlay-put ov 'category 'org-panes-highlight)
-    (when (< len (window-body-height))
-      (setq len (/ (- (window-body-height) len) 2))
-      (overlay-put ov 'before-string
-                   (make-string len (string-to-char "\n"))))))
+  (when org-panes-force-centering-text-vertically
+    (let ((len 0)
+          (ov (make-overlay 0 0))
+          (pos -1))
+      (save-excursion (goto-char (point-min))
+                      (while (> (point) pos)
+                        (setq len (+ len 1)
+                              pos (point))
+                        (forward-visible-line 1)))
+      (overlay-put ov 'category 'org-panes-highlight)
+      (when (< len (window-body-height))
+        (setq len (/ (- (window-body-height) len) 2))
+        (overlay-put ov 'before-string
+                     (make-string len (string-to-char "\n")))))))
 
 (defun org-panes--make-overlay ()
   "Put the different overlays for highlighting."
