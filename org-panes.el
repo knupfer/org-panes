@@ -182,12 +182,12 @@ buffer is highlighted in the contents and overview buffer."
 
 (defun org-panes-move-point (&optional was-deferred)
   "Share point and highlight."
-  (redisplay)
+
   (unless (or org-panes-deferred (active-minibuffer-window))
     (if (or (equal (buffer-name) org-panes-all)
             (equal (buffer-name) org-panes-contents)
             (equal (buffer-name) org-panes-overview))
-        (save-current-buffer
+        (let ((old-win (selected-window)))
           (when (or was-deferred (org-panes-changed-p))
             (catch 'exit
               (let ((pos (point))
@@ -239,7 +239,8 @@ buffer is highlighted in the contents and overview buffer."
                                            (org-panes--remove-overlay)
                                            (org-panes-center)
                                            (org-panes--make-overlay))))
-              (setq org-panes-deferred nil))))
+              (setq org-panes-deferred nil)))
+          (select-window old-win))
       (when (not (equal "*Org Src"
                         (substring (buffer-name) 0
                                    (min (length (buffer-name)) 8))))
