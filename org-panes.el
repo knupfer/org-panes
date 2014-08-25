@@ -186,58 +186,59 @@ buffer is highlighted in the contents and overview buffer."
     (if (or (equal (buffer-name) org-panes-all)
             (equal (buffer-name) org-panes-contents)
             (equal (buffer-name) org-panes-overview))
-        (when (or was-deferred (org-panes-changed-p))
-          (catch 'exit
-            (let ((pos (point))
-                  (org-panes-all (get-buffer-window org-panes-all))
-                  (org-panes-overview (get-buffer-window org-panes-overview))
-                  (org-panes-contents (get-buffer-window org-panes-contents)))
-              (save-excursion (move-beginning-of-line nil)
-                              (setq pos (point)))
-              (when (and org-panes-all
-                         (not (equal org-panes-all (get-buffer-window))))
-                (progn
-                  (with-selected-window org-panes-all
+        (save-current-buffer
+          (when (or was-deferred (org-panes-changed-p))
+            (catch 'exit
+              (let ((pos (point))
+                    (org-panes-all (get-buffer-window org-panes-all))
+                    (org-panes-overview (get-buffer-window org-panes-overview))
+                    (org-panes-contents (get-buffer-window org-panes-contents)))
+                (save-excursion (move-beginning-of-line nil)
+                                (setq pos (point)))
+                (when (and org-panes-all
+                           (not (equal org-panes-all (get-buffer-window))))
+                  (progn
+                    (with-selected-window org-panes-all
+                      (goto-char pos)
+                      (move-beginning-of-line nil)
+                      (set-window-start nil (point)))))
+                (when (and org-panes-overview
+                           (not (equal org-panes-overview (get-buffer-window))))
+                  (with-selected-window org-panes-overview
                     (goto-char pos)
                     (move-beginning-of-line nil)
-                    (set-window-start nil (point)))))
-              (when (and org-panes-overview
-                         (not (equal org-panes-overview (get-buffer-window))))
-                (with-selected-window org-panes-overview
-                  (goto-char pos)
-                  (move-beginning-of-line nil)
-                  (recenter)))
-              (when (and org-panes-contents
-                         (not (equal org-panes-contents (get-buffer-window))))
-                (with-selected-window org-panes-contents
-                  (goto-char pos)
-                  (move-beginning-of-line nil)))
-              (when (input-pending-p) (throw 'exit (org-panes-defer)))
-              (when org-panes-all (with-selected-window org-panes-all
-                                    (setq org-panes-min (window-start))
-                                    (save-excursion
-                                      (goto-char org-panes-min)
-                                      (beginning-of-line)
-                                      (forward-line (window-body-height))
-                                      (setq org-panes-max (1- (point))))
-                                    (org-panes--remove-overlay)
-                                    (org-panes-center)))
-              (when org-panes-contents
-                (with-selected-window org-panes-contents
-                  (org-panes--remove-overlay)
-                  (org-panes-center)
-                  (let  ((pos (org-panes--make-overlay)))
-                    (recenter (round (- (min (* 0.5 (window-body-height)
-                                                (/ (float (car pos))
-                                                   (cadr pos))) (car pos))
-                                        (/ (+ (window-body-height)
-                                              (min (* 0.5 (window-body-height))
-                                                   (cadr pos))) 2)))))))
-              (when org-panes-overview (with-selected-window org-panes-overview
-                                         (org-panes--remove-overlay)
-                                         (org-panes-center)
-                                         (org-panes--make-overlay))))
-            (setq org-panes-deferred nil)))
+                    (recenter)))
+                (when (and org-panes-contents
+                           (not (equal org-panes-contents (get-buffer-window))))
+                  (with-selected-window org-panes-contents
+                    (goto-char pos)
+                    (move-beginning-of-line nil)))
+                (when (input-pending-p) (throw 'exit (org-panes-defer)))
+                (when org-panes-all (with-selected-window org-panes-all
+                                      (setq org-panes-min (window-start))
+                                      (save-excursion
+                                        (goto-char org-panes-min)
+                                        (beginning-of-line)
+                                        (forward-line (window-body-height))
+                                        (setq org-panes-max (1- (point))))
+                                      (org-panes--remove-overlay)
+                                      (org-panes-center)))
+                (when org-panes-contents
+                  (with-selected-window org-panes-contents
+                    (org-panes--remove-overlay)
+                    (org-panes-center)
+                    (let  ((pos (org-panes--make-overlay)))
+                      (recenter (round (- (min (* 0.5 (window-body-height)
+                                                  (/ (float (car pos))
+                                                     (cadr pos))) (car pos))
+                                          (/ (+ (window-body-height)
+                                                (min (* 0.5 (window-body-height))
+                                                     (cadr pos))) 2)))))))
+                (when org-panes-overview (with-selected-window org-panes-overview
+                                           (org-panes--remove-overlay)
+                                           (org-panes-center)
+                                           (org-panes--make-overlay))))
+              (setq org-panes-deferred nil))))
       (when (not (equal "*Org Src"
                         (substring (buffer-name) 0
                                    (min (length (buffer-name)) 8))))
