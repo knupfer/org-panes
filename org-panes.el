@@ -139,7 +139,9 @@ buffer is highlighted in the contents and overview buffer."
           (add-hook 'post-command-hook 'org-panes-move-point)
           (message "org-panes created"))
       (remove-hook 'post-command-hook 'org-panes-persist t)
-      (org-panes-stop-panes))))
+      (org-panes-stop-panes)
+      (when org-panes-persist-panes
+        (message "org-panes killed...")))))
 
 (defun org-panes-persist ()
   (when (not org-panes-all)
@@ -167,7 +169,8 @@ buffer is highlighted in the contents and overview buffer."
   (setq org-panes-all nil)
   (delete-other-windows)
   (remove-hook 'post-command-hook 'org-panes-move-point)
-  (message "org-panes killed"))
+  (unless org-panes-persist-panes
+    (message "org-panes killed...")))
 
 (defun org-panes-move-point ()
   "Share point and highlight."
