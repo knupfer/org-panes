@@ -182,6 +182,7 @@ buffer is highlighted in the contents and overview buffer."
 
 (defun org-panes-move-point (&optional was-deferred)
   "Share point and highlight."
+  (redisplay)
   (unless (or org-panes-deferred (active-minibuffer-window))
     (if (or (equal (buffer-name) org-panes-all)
             (equal (buffer-name) org-panes-contents)
