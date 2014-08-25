@@ -69,6 +69,13 @@ buffer unless org-panes is called another time."
   :group 'org-panes
   :type 'integer)
 
+(defcustom org-panes-timer-intervall 0.15
+  "Seconds after which overlays are redrawn and buffers moved.
+This value greatly influences responsiveness and ressource
+consumption."
+  :group 'org-panes
+  :type 'integer)
+
 (defcustom org-panes-contents-size 60
   "Percentage of the remaining frame width/height used for the
 contents buffer."
@@ -91,7 +98,7 @@ contents buffer."
 (defvar org-panes-change-string nil)
 (defvar org-panes-min)
 (defvar org-panes-max)
-(defvar org-panes-deferred nil)
+(defvar org-panes-timer nil)
 
 (defun org-panes ()
   "Make different panes for an org-mode file.  Current point is
@@ -137,7 +144,8 @@ buffer is highlighted in the contents and overview buffer."
             (setq-local cursor-in-non-selected-windows nil)
             (when org-panes-persist-panes
               (add-hook 'post-command-hook 'org-panes-persist nil t)))
-          (add-hook 'post-command-hook 'org-panes-move-point)
+          (setq org-panes-timer
+                (run-with-idle-timer org-panes-timer-intervall t 'org-panes-move-point))
           (message "org-panes created"))
       (remove-hook 'post-command-hook 'org-panes-persist t)
       (org-panes-stop-panes)
@@ -169,26 +177,18 @@ buffer is highlighted in the contents and overview buffer."
   (setq org-panes-contents nil)
   (setq org-panes-all nil)
   (delete-other-windows)
-  (remove-hook 'post-command-hook 'org-panes-move-point)
+  (cancel-timer org-panes-timer)
   (unless org-panes-persist-panes
     (message "org-panes killed...")))
 
-(defun org-panes-defer ()
-  (if org-panes-deferred
-      (progn (setq org-panes-deferred nil)
-             (org-panes-move-point t))
-    (setq org-panes-deferred t)
-    (run-with-idle-timer 0.1 nil 'org-panes-defer)))
-
-(defun org-panes-move-point (&optional was-deferred)
+(defun org-panes-move-point ()
   "Share point and highlight."
-
-  (unless (or org-panes-deferred (active-minibuffer-window))
+  (unless (active-minibuffer-window)
     (if (or (equal (buffer-name) org-panes-all)
             (equal (buffer-name) org-panes-contents)
             (equal (buffer-name) org-panes-overview))
         (let ((old-win (selected-window)))
-          (when (or was-deferred (org-panes-changed-p))
+          (when (org-panes-changed-p)
             (catch 'exit
               (let ((pos (point))
                     (org-panes-all (get-buffer-window org-panes-all))
@@ -214,7 +214,7 @@ buffer is highlighted in the contents and overview buffer."
                   (with-selected-window org-panes-contents
                     (goto-char pos)
                     (move-beginning-of-line nil)))
-                (when (input-pending-p) (throw 'exit (org-panes-defer)))
+                (when (input-pending-p) (throw 'exit t))
                 (when org-panes-all (with-selected-window org-panes-all
                                       (setq org-panes-min (window-start))
                                       (save-excursion
@@ -238,8 +238,7 @@ buffer is highlighted in the contents and overview buffer."
                 (when org-panes-overview (with-selected-window org-panes-overview
                                            (org-panes--remove-overlay)
                                            (org-panes-center)
-                                           (org-panes--make-overlay))))
-              (setq org-panes-deferred nil)))
+                                           (org-panes--make-overlay))))))
           (select-window old-win))
       (when (not (equal "*Org Src"
                         (substring (buffer-name) 0
