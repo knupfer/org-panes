@@ -203,8 +203,7 @@ buffer is highlighted in the contents and overview buffer."
                        (not (equal org-panes-contents (get-buffer-window))))
               (with-selected-window org-panes-contents
                 (goto-char pos)
-                (move-beginning-of-line nil)
-                (recenter)))
+                (move-beginning-of-line nil)))
             (when org-panes-all (with-selected-window org-panes-all
                                   (setq org-panes-min (window-start))
                                   (save-excursion
@@ -214,10 +213,16 @@ buffer is highlighted in the contents and overview buffer."
                                     (setq org-panes-max (1- (point))))
                                   (org-panes--remove-overlay)
                                   (org-panes-center)))
-            (when org-panes-contents (with-selected-window org-panes-contents
-                                       (org-panes--remove-overlay)
-                                       (org-panes-center)
-                                       (org-panes--make-overlay)))
+            (when org-panes-contents
+              (with-selected-window org-panes-contents
+                (org-panes--remove-overlay)
+                (org-panes-center)
+                (let  ((pos (org-panes--make-overlay)))
+                  (recenter (round (- (min (* (window-body-height) 0.5)
+                                           (car pos))
+                                      (/ (+ (window-body-height)
+                                            (min (* (window-body-height) 0.5)
+                                                 (cadr pos))) 2)))))))
             (when org-panes-overview (with-selected-window org-panes-overview
                                        (org-panes--remove-overlay)
                                        (org-panes-center)
@@ -226,6 +231,11 @@ buffer is highlighted in the contents and overview buffer."
                         (substring (buffer-name) 0
                                    (min (length (buffer-name)) 8))))
         (org-panes-stop-panes)))))
+
+(defun org-panes-calc-pos ()
+  (let ((pos (org-panes--make-overlay)))
+    (recenter (round (/ (float (car pos))
+                        (cadr pos))))))
 
 (defun org-panes-changed-p ()
   (let ((old-string org-panes-change-string))
@@ -264,12 +274,16 @@ buffer is highlighted in the contents and overview buffer."
                      (make-string len (string-to-char "\n")))))))
 
 (defun org-panes--make-overlay ()
-  "Put the different overlays for highlighting."
+  "Put the different overlays for highlighting and return size of
+overview tree."
   (save-excursion
     (let ((a (min (point) org-panes-min))
           (b (max (point) org-panes-max))
           (tree-start (point-min))
-          (tree-end (point-max)))
+          (tree-end (point-max))
+          (tree-size 0)
+          (point-pos 0)
+          (old-point (point)))
       (end-of-line)
       (re-search-backward "^* " nil t)
       (setq tree-start (point))
@@ -284,12 +298,16 @@ buffer is highlighted in the contents and overview buffer."
             (let ((ov (make-overlay (- p 2) (- p 1))))
               (overlay-put ov 'category 'org-panes-highlight)
               (overlay-put ov 'face 'org-panes-highlight-window-face)))
-          (when (or (< p tree-start)
-                    (> p tree-end))
-            (let ((ov (make-overlay p (progn (end-of-line)
-                                             (point)))))
-              (overlay-put ov 'category 'org-panes-highlight)
-              (overlay-put ov 'face 'org-panes-hide-tree-face))))))))
+          (if (or (< p tree-start)
+                  (> p tree-end))
+              (let ((ov (make-overlay p (progn (end-of-line)
+                                               (point)))))
+                (overlay-put ov 'category 'org-panes-highlight)
+                (overlay-put ov 'face 'org-panes-hide-tree-face))
+            (setq tree-size (+ 1 tree-size))
+            (when (< p old-point)
+              (setq point-pos (+ 1 point-pos))))))
+      (list point-pos tree-size))))
 
 (defun org-panes--remove-overlay ()
   "Delete all overlays in current buffer."
