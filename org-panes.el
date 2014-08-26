@@ -159,10 +159,6 @@ buffer is highlighted in the contents and overview buffer."
 
 (defun org-panes-stop-panes ()
   "Kill all panes and clean up."
-  (when (and org-panes-all (get-buffer org-panes-all))
-    (let ((win (get-buffer-window org-panes-all)))
-      (when win (with-selected-window win
-                  (org-panes--remove-overlay)))))
   (when (and org-panes-contents (get-buffer org-panes-contents))
     (let ((win (get-buffer-window org-panes-contents)))
       (when win (with-selected-window win
@@ -221,9 +217,7 @@ buffer is highlighted in the contents and overview buffer."
                                         (goto-char org-panes-min)
                                         (beginning-of-line)
                                         (forward-line (window-body-height))
-                                        (setq org-panes-max (1- (point))))
-                                      (org-panes--remove-overlay)
-                                      (org-panes-center)))
+                                        (setq org-panes-max (1- (point))))))
                 (when org-panes-contents
                   (with-selected-window org-panes-contents
                     (org-panes--remove-overlay)
