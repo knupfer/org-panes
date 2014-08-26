@@ -167,6 +167,7 @@ buffer is highlighted in the contents and overview buffer."
     (setq-local cursor-in-non-selected-windows nil)))
 
 (defun org-panes-persist ()
+  "Respawn panes upon visit."
   (when (not org-panes-list)
     (remove-hook 'post-command-hook 'org-panes-persist t)
     (org-panes)))
@@ -264,6 +265,7 @@ height of the tree.  Return a suggested value for recenter."
                                             (float (cadr pos)))) 2))))
 
 (defun org-panes-changed-p ()
+  "Decide whether updating overlays is considered."
   (let ((old-string org-panes-change-string))
     (if (equal (buffer-name) (nth 2 org-panes-list))
         (save-excursion
@@ -284,6 +286,7 @@ height of the tree.  Return a suggested value for recenter."
     (unless (equal old-string org-panes-change-string) t)))
 
 (defun org-panes-center (limit)
+  "Add padding to overview and contents to allow centering."
   (when org-panes-force-centering-text-vertically
     (let ((len 0)
           (ov (make-overlay 0 0)))
