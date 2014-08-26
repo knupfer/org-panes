@@ -74,7 +74,7 @@ buffer unless org-panes is called another time."
 This value greatly influences responsiveness and ressource
 consumption."
   :group 'org-panes
-  :type 'integer)
+  :type 'float)
 
 (defcustom org-panes-contents-size 60
   "Percentage of the remaining frame width/height used for the
@@ -151,7 +151,8 @@ buffer is highlighted in the contents and overview buffer."
           (add-hook 'before-change-functions
                     (lambda (a b) (setq org-panes-edited t)) nil t)
           (setq org-panes-timer
-                (run-with-idle-timer org-panes-timer-intervall t 'org-panes-move-point))
+                (run-with-idle-timer org-panes-timer-intervall t
+                                     'org-panes-move-point))
           (org-panes-move-point)
           (redisplay)
           (message "org-panes created"))
@@ -202,13 +203,14 @@ buffer is highlighted in the contents and overview buffer."
                                         (set-window-start nil (point))))))
                       win-list)
                 (when (input-pending-p) (throw 'exit t))
-                (when (nth 2 win-list) (with-selected-window (nth 2 win-list)
-                                         (setq org-panes-min (window-start))
-                                         (save-excursion
-                                           (goto-char org-panes-min)
-                                           (beginning-of-line)
-                                           (forward-line (window-body-height))
-                                           (setq org-panes-max (1- (point))))))
+                (when (nth 2 win-list)
+                  (with-selected-window (nth 2 win-list)
+                    (setq org-panes-min (window-start))
+                    (save-excursion
+                      (goto-char org-panes-min)
+                      (beginning-of-line)
+                      (forward-line (window-body-height))
+                      (setq org-panes-max (1- (point))))))
                 (when (nth 1 win-list)
                   (with-selected-window (nth 1 win-list)
                     (org-panes--remove-overlay 'org-panes-highlight)
@@ -216,31 +218,33 @@ buffer is highlighted in the contents and overview buffer."
                       (org-panes--remove-overlay 'org-panes-padding)
                       (org-panes-center org-panes-contents-depth))
                     (let* ((pos (org-panes--make-overlay))
-                           (new-pos (round (- (min (* 0.5 (window-body-height)
-                                                    (/ (float (car pos))
-                                                       (cadr pos))) (car pos))
-                                            (/ (+ (window-body-height)
-                                                  (min (* 0.5 (window-body-height))
-                                                       (float (cadr pos)))) 2)))))
+                           (new (round
+                                 (- (min (* 0.5 (window-body-height)
+                                            (/ (float (car pos))
+                                               (cadr pos))) (car pos))
+                                    (/ (+ (window-body-height)
+                                          (min (* 0.5 (window-body-height))
+                                               (float (cadr pos)))) 2)))))
                       (when (and (or (< (point-min) (window-start))
                                      (> (point-max) (window-end)))
                                  (< 1 (abs (- (nth 1 org-panes-line-pos-list)
-                                              (- new-pos (line-number-at-pos))))))
+                                              (- new (line-number-at-pos))))))
                         (setcar (cdr org-panes-line-pos-list)
-                                (- new-pos (line-number-at-pos)))
-                        (recenter new-pos)))))
-                (when (nth 0 win-list) (with-selected-window (nth 0 win-list)
-                                         (when (and (or (< (point-min) (window-start))
-                                                        (> (point-max) (window-end)))
-                                                    (not (equal (nth 0 org-panes-line-pos-list)
-                                                                (setcar org-panes-line-pos-list
-                                                                        (line-number-at-pos)))))
-                                           (recenter))
-                                         (org-panes--remove-overlay 'org-panes-highlight)
-                                         (when org-panes-edited
-                                           (org-panes--remove-overlay 'org-panes-padding)
-                                           (org-panes-center org-panes-overview-depth))
-                                         (org-panes--make-overlay t)))
+                                (- new (line-number-at-pos)))
+                        (recenter new)))))
+                (when (nth 0 win-list)
+                  (with-selected-window (nth 0 win-list)
+                    (when (and (or (< (point-min) (window-start))
+                                   (> (point-max) (window-end)))
+                               (not (equal (nth 0 org-panes-line-pos-list)
+                                           (setcar org-panes-line-pos-list
+                                                   (line-number-at-pos)))))
+                      (recenter))
+                    (org-panes--remove-overlay 'org-panes-highlight)
+                    (when org-panes-edited
+                      (org-panes--remove-overlay 'org-panes-padding)
+                      (org-panes-center org-panes-overview-depth))
+                    (org-panes--make-overlay t)))
                 (setq org-panes-edited nil))))
           (select-window old-win))
       (when (not (equal "*Org Src"
@@ -309,7 +313,8 @@ overview tree."
           (goto-char (min a tree-start))
         (goto-char (point-min))
         (org-panes--remove-overlay 'org-panes-hide))
-      (while (re-search-forward "^*+ " (if (equal topic org-panes-topic) (max b tree-end) nil) t)
+      (while (re-search-forward "^*+ " (if (equal topic org-panes-topic)
+                                           (max b tree-end) nil) t)
         (let ((p (point)))
           (when (and (> p a) (< p b))
             (let ((ov (make-overlay (- p 2) (- p 1))))
