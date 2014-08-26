@@ -96,6 +96,7 @@ contents buffer."
 (defvar org-panes-min)
 (defvar org-panes-max)
 (defvar org-panes-timer nil)
+(defvar org-panes-edited nil)
 
 (defun org-panes ()
   "Make different panes for an org-mode file.  Current point is
@@ -114,7 +115,8 @@ buffer is highlighted in the contents and overview buffer."
                                          (concat b ":CONTENTS")
                                          b)))
             (setq org-panes-min (window-start)
-                  org-panes-max (window-end))
+                  org-panes-max (window-end)
+                  org-panes-edited t)
             (save-excursion
               (goto-char org-panes-min)
               (beginning-of-line)
@@ -142,10 +144,14 @@ buffer is highlighted in the contents and overview buffer."
             (setq-local cursor-in-non-selected-windows nil)
             (when org-panes-persist-panes
               (add-hook 'post-command-hook 'org-panes-persist nil t)))
+          (add-hook 'before-change-functions
+                    (lambda (a b) (setq org-panes-edited t)) nil t)
           (setq org-panes-timer
                 (run-with-idle-timer org-panes-timer-intervall t 'org-panes-move-point))
           (message "org-panes created"))
       (remove-hook 'post-command-hook 'org-panes-persist t)
+      (remove-hook 'before-change-functions
+                   (lambda (a b) (setq org-panes-edited t)) t)
       (org-panes-stop-panes)
       (when org-panes-persist-panes
         (message "org-panes killed...")))))
@@ -161,7 +167,8 @@ buffer is highlighted in the contents and overview buffer."
            (when (and buf (get-buffer buf))
              (let ((win (get-buffer-window buf)))
                (when win (with-selected-window win
-                           (org-panes--remove-overlay)))))
+                           (org-panes--remove-overlay 'org-panes-highlight)
+                           (org-panes--remove-overlay 'org-panes-padding)))))
            (when (car org-panes-list)
              (kill-buffer buf) t)))
   (delete-other-windows)
@@ -198,8 +205,10 @@ buffer is highlighted in the contents and overview buffer."
                                            (setq org-panes-max (1- (point))))))
                 (when (nth 1 win-list)
                   (with-selected-window (nth 1 win-list)
-                    (org-panes--remove-overlay)
-                    (org-panes-center org-panes-contents-depth)
+                    (org-panes--remove-overlay 'org-panes-highlight)
+                    (when org-panes-edited
+                      (org-panes--remove-overlay 'org-panes-padding)
+                      (org-panes-center org-panes-contents-depth))
                     (let  ((pos (org-panes--make-overlay)))
                       (recenter (round (- (min (* 0.5 (window-body-height)
                                                   (/ (float (car pos))
@@ -209,9 +218,12 @@ buffer is highlighted in the contents and overview buffer."
                                                      (cadr pos))) 2)))))))
                 (when (nth 0 win-list) (with-selected-window (nth 0 win-list)
                                          (recenter)
-                                         (org-panes--remove-overlay)
-                                         (org-panes-center org-panes-overview-depth)
-                                         (org-panes--make-overlay))))))
+                                         (org-panes--remove-overlay 'org-panes-highlight)
+                                         (when org-panes-edited
+                                           (org-panes--remove-overlay 'org-panes-padding)
+                                           (org-panes-center org-panes-overview-depth))
+                                         (org-panes--make-overlay)))
+                (setq org-panes-edited nil))))
           (select-window old-win))
       (when (not (equal "*Org Src"
                         (substring (buffer-name) 0
@@ -248,7 +260,7 @@ buffer is highlighted in the contents and overview buffer."
                                     (match-beginning 0) 2)
                                  limit)
                           (setq len (+ len 1)))))
-      (overlay-put ov 'category 'org-panes-highlight)
+      (overlay-put ov 'category 'org-panes-padding)
       (when (< len (window-body-height))
         (setq len (/ (- (window-body-height) len) 2))
         (overlay-put ov 'before-string
@@ -290,18 +302,18 @@ overview tree."
               (setq point-pos (+ 1 point-pos))))))
       (list point-pos tree-size))))
 
-(defun org-panes--remove-overlay ()
+(defun org-panes--remove-overlay (tag)
   "Delete all overlays in current buffer."
-  (dolist (ov (org-panes--active-overlays))
+  (dolist (ov (org-panes--active-overlays tag))
     (delete-overlay ov)))
 
-(defun org-panes--active-overlays ()
+(defun org-panes--active-overlays (tag)
   "Collect all overlays in current buffer."
   (let ((del-from (point-min))
         (del-to (point-max)))
     (delq nil (mapcar (lambda (ov)
                         (and (eq (overlay-get ov 'category)
-                                 'org-panes-highlight)
+                                 tag)
                              ov))
                       (overlays-in del-from del-to)))))
 
