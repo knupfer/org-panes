@@ -236,10 +236,8 @@ necessary."
              (new (org-panes-centering-position pos)))
         (when (and (or (< (point-min) (window-start))
                        (> (point-max) (window-end)))
-                   (< 1 (abs (- (nth 1 org-panes-line-pos-list)
-                                (- new (line-number-at-pos))))))
-          (setcar (cdr org-panes-line-pos-list)
-                  (- new (line-number-at-pos)))
+                   (< 0 (abs (- (nth 1 org-panes-line-pos-list) new))))
+          (setcar (cdr org-panes-line-pos-list) new)
           (recenter new)))))
   (when (nth 0 win-list)
     (with-selected-window (nth 0 win-list)
@@ -258,10 +256,10 @@ necessary."
 (defun org-panes-centering-position (pos)
   "Take a list with the position of point in a tree and the
 height of the tree.  Return a suggested value for recenter."
-  (round (- (min (* 0.5 (window-body-height)
+  (- (round (min (* 0.5 (window-body-height)
                     (/ (float (car pos)) (cadr pos)))
-                 (car pos))
-            (/ (+ (window-body-height) (min (* 0.5 (window-body-height))
+                 (car pos)))
+     (round (/ (+ (window-body-height) (min (* 0.5 (window-body-height))
                                             (float (cadr pos)))) 2))))
 
 (defun org-panes-changed-p ()
