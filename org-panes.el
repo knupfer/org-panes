@@ -190,7 +190,7 @@ buffer is highlighted in the contents and overview buffer."
           (when (org-panes-changed-p)
             (catch 'exit
               (let ((pos (point))
-                    (win-list (map 'list 'get-buffer-window org-panes-list))
+                    (win-list (mapcar 'get-buffer-window org-panes-list))
                     (win (get-buffer-window)))
                 (save-excursion (move-beginning-of-line nil)
                                 (setq pos (point)))
