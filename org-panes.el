@@ -99,6 +99,7 @@ contents buffer."
 (defvar org-panes-edited nil)
 (defvar org-panes-line-pos-list '(0 0 0))
 (defvar org-panes-topic nil)
+(defvar org-panes-list nil)
 
 (defun org-panes ()
   "Make different panes for an org-mode file.  Current point is
@@ -118,7 +119,8 @@ buffer is highlighted in the contents and overview buffer."
                                          b)))
             (setq org-panes-min (window-start)
                   org-panes-max (window-end)
-                  org-panes-edited t)
+                  org-panes-edited t
+                  org-panes-topic nil)
             (save-excursion
               (goto-char org-panes-min)
               (beginning-of-line)
@@ -150,6 +152,8 @@ buffer is highlighted in the contents and overview buffer."
                     (lambda (a b) (setq org-panes-edited t)) nil t)
           (setq org-panes-timer
                 (run-with-idle-timer org-panes-timer-intervall t 'org-panes-move-point))
+          (org-panes-move-point)
+          (redisplay)
           (message "org-panes created"))
       (remove-hook 'post-command-hook 'org-panes-persist t)
       (remove-hook 'before-change-functions
