@@ -211,46 +211,54 @@ buffer is highlighted in the contents and overview buffer."
                       (beginning-of-line)
                       (forward-line (window-body-height))
                       (setq org-panes-max (1- (point))))))
-                (when (nth 1 win-list)
-                  (with-selected-window (nth 1 win-list)
-                    (org-panes--remove-overlay 'org-panes-highlight)
-                    (when org-panes-edited
-                      (org-panes--remove-overlay 'org-panes-padding)
-                      (org-panes-center org-panes-contents-depth))
-                    (let* ((pos (org-panes--make-overlay))
-                           (new (round
-                                 (- (min (* 0.5 (window-body-height)
-                                            (/ (float (car pos))
-                                               (cadr pos))) (car pos))
-                                    (/ (+ (window-body-height)
-                                          (min (* 0.5 (window-body-height))
-                                               (float (cadr pos)))) 2)))))
-                      (when (and (or (< (point-min) (window-start))
-                                     (> (point-max) (window-end)))
-                                 (< 1 (abs (- (nth 1 org-panes-line-pos-list)
-                                              (- new (line-number-at-pos))))))
-                        (setcar (cdr org-panes-line-pos-list)
-                                (- new (line-number-at-pos)))
-                        (recenter new)))))
-                (when (nth 0 win-list)
-                  (with-selected-window (nth 0 win-list)
-                    (when (and (or (< (point-min) (window-start))
-                                   (> (point-max) (window-end)))
-                               (not (equal (nth 0 org-panes-line-pos-list)
-                                           (setcar org-panes-line-pos-list
-                                                   (line-number-at-pos)))))
-                      (recenter))
-                    (org-panes--remove-overlay 'org-panes-highlight)
-                    (when org-panes-edited
-                      (org-panes--remove-overlay 'org-panes-padding)
-                      (org-panes-center org-panes-overview-depth))
-                    (org-panes--make-overlay t)))
+                (org-panes-overlay-dispatcher win-list)
                 (setq org-panes-edited nil))))
           (select-window old-win))
       (when (not (equal "*Org Src"
                         (substring (buffer-name) 0
                                    (min (length (buffer-name)) 8))))
         (org-panes-stop-panes)))))
+
+(defun org-panes-overlay-dispatcher (win-list)
+  "Take a list of windows and apply overlay functions, when
+necessary."
+  (when (nth 1 win-list)
+    (with-selected-window (nth 1 win-list)
+      (org-panes--remove-overlay 'org-panes-highlight)
+      (when org-panes-edited
+        (org-panes--remove-overlay 'org-panes-padding)
+        (org-panes-center org-panes-contents-depth))
+      (let* ((pos (org-panes--make-overlay))
+             (new (org-panes-centering-position pos)))
+        (when (and (or (< (point-min) (window-start))
+                       (> (point-max) (window-end)))
+                   (< 1 (abs (- (nth 1 org-panes-line-pos-list)
+                                (- new (line-number-at-pos))))))
+          (setcar (cdr org-panes-line-pos-list)
+                  (- new (line-number-at-pos)))
+          (recenter new)))))
+  (when (nth 0 win-list)
+    (with-selected-window (nth 0 win-list)
+      (when (and (or (< (point-min) (window-start))
+                     (> (point-max) (window-end)))
+                 (not (equal (nth 0 org-panes-line-pos-list)
+                             (setcar org-panes-line-pos-list
+                                     (line-number-at-pos)))))
+        (recenter))
+      (org-panes--remove-overlay 'org-panes-highlight)
+      (when org-panes-edited
+        (org-panes--remove-overlay 'org-panes-padding)
+        (org-panes-center org-panes-overview-depth))
+      (org-panes--make-overlay t))))
+
+(defun org-panes-centering-position (pos)
+  "Take a list with the position of point in a tree and the
+height of the tree.  Return a suggested value for recenter."
+  (round (- (min (* 0.5 (window-body-height)
+                    (/ (float (car pos)) (cadr pos)))
+                 (car pos))
+            (/ (+ (window-body-height) (min (* 0.5 (window-body-height))
+                                            (float (cadr pos)))) 2))))
 
 (defun org-panes-changed-p ()
   (let ((old-string org-panes-change-string))
