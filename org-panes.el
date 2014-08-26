@@ -111,43 +111,22 @@ buffer is highlighted in the contents and overview buffer."
     (if (not org-panes-list)
         (progn
           (delete-other-windows)
-          (let ((size (window-body-width))
-                (height (window-body-height)))
-            (setq org-panes-list (let ((b (buffer-name)))
-                                   (list (concat b ":OVERVIEW")
-                                         (concat b ":CONTENTS")
-                                         b)))
-            (setq org-panes-min (window-start)
-                  org-panes-max (window-end)
-                  org-panes-edited t
-                  org-panes-topic nil)
-            (save-excursion
-              (goto-char org-panes-min)
-              (beginning-of-line)
-              (forward-line (window-body-height))
-              (setq org-panes-max (1- (point))))
-            (split-window-right (/ (* size org-panes-main-size) -100))
-            (if org-panes-split-overview-horizontally
-                (split-window-below)
-              (split-window-right (/ (* size
-                                        org-panes-contents-size) -200)))
-            (other-window -1)
-            (clone-indirect-buffer (nth 1 org-panes-list) t)
-            (hide-sublevels org-panes-contents-depth)
-            (setq-local cursor-in-non-selected-windows nil)
-            (org-panes--make-overlay)
-            (clone-indirect-buffer (nth 0 org-panes-list) t)
-            (hide-sublevels org-panes-overview-depth)
-            (if org-panes-split-overview-horizontally
-                (window-resize nil (+ (/ (* height org-panes-contents-size)
-                                         -100) (/ height 2))))
-            (setq-local cursor-in-non-selected-windows nil)
-            (org-panes--make-overlay)
-            (other-window -1)
-            (show-all)
-            (setq-local cursor-in-non-selected-windows nil)
-            (when org-panes-persist-panes
-              (add-hook 'post-command-hook 'org-panes-persist nil t)))
+          (setq org-panes-list (let ((b (buffer-name)))
+                                 (list (concat b ":OVERVIEW")
+                                       (concat b ":CONTENTS")
+                                       b)))
+          (setq org-panes-min (window-start)
+                org-panes-max (window-end)
+                org-panes-edited t
+                org-panes-topic nil)
+          (save-excursion
+            (goto-char org-panes-min)
+            (beginning-of-line)
+            (forward-line (window-body-height))
+            (setq org-panes-max (1- (point))))
+          (org-panes-establish-layout)
+          (when org-panes-persist-panes
+            (add-hook 'post-command-hook 'org-panes-persist nil t))
           (add-hook 'before-change-functions
                     (lambda (a b) (setq org-panes-edited t)) nil t)
           (setq org-panes-timer
@@ -162,6 +141,30 @@ buffer is highlighted in the contents and overview buffer."
       (org-panes-stop-panes)
       (when org-panes-persist-panes
         (message "org-panes killed...")))))
+
+(defun org-panes-establish-layout ()
+  "Split and clone frames.  Fold org structures."
+  (let ((width (window-body-width))
+        (height (window-body-height)))
+    (split-window-right (/ (* width org-panes-main-size) -100))
+    (if org-panes-split-overview-horizontally
+        (split-window-below)
+      (split-window-right (/ (* width org-panes-contents-size) -200)))
+    (other-window -1)
+    (clone-indirect-buffer (nth 1 org-panes-list) t)
+    (hide-sublevels org-panes-contents-depth)
+    (setq-local cursor-in-non-selected-windows nil)
+    (org-panes--make-overlay)
+    (clone-indirect-buffer (nth 0 org-panes-list) t)
+    (hide-sublevels org-panes-overview-depth)
+    (if org-panes-split-overview-horizontally
+        (window-resize nil (+ (/ (* height org-panes-contents-size) -100)
+                              (/ height 2))))
+    (setq-local cursor-in-non-selected-windows nil)
+    (org-panes--make-overlay)
+    (other-window -1)
+    (show-all)
+    (setq-local cursor-in-non-selected-windows nil)))
 
 (defun org-panes-persist ()
   (when (not org-panes-list)
