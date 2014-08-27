@@ -182,11 +182,9 @@ buffer is highlighted in the contents and overview buffer."
     (if (member (buffer-name) org-panes-list)
         (let ((old-win (selected-window)))
           (when (org-panes-changed-p)
-            (let ((pos (point))
+            (let ((pos (save-excursion (move-beginning-of-line nil) (point)))
                   (win-list (mapcar 'get-buffer-window org-panes-list))
                   (win (get-buffer-window)))
-              (save-excursion (move-beginning-of-line nil)
-                              (setq pos (point)))
               (mapc (lambda (x) (when (and x (not (equal x win)))
                                   (with-selected-window x
                                     (goto-char pos)
@@ -196,18 +194,15 @@ buffer is highlighted in the contents and overview buffer."
                     win-list)
               (when (nth 2 win-list)
                 (with-selected-window (nth 2 win-list)
-                  (setq org-panes-min (window-start))
                   (save-excursion
-                    (goto-char org-panes-min)
-                    (beginning-of-line)
+                    (goto-char (setq org-panes-min (window-start)))
                     (forward-line (window-body-height))
                     (setq org-panes-max (1- (point))))))
               (org-panes-overlay-dispatcher win-list)
               (setq org-panes-edited nil)))
           (select-window old-win))
-      (when (not (equal "*Org Src"
-                        (substring (buffer-name) 0
-                                   (min (length (buffer-name)) 8))))
+      (when (not (equal "*Org Src" (substring (buffer-name) 0
+                                              (min (length (buffer-name)) 8))))
         (org-panes-stop-panes)))))
 
 (defun org-panes-overlay-dispatcher (win-list)
