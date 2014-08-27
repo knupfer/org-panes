@@ -73,13 +73,6 @@ buffer unless org-panes is called another time."
   :group 'org-panes
   :type 'integer)
 
-(defcustom org-panes-timer-intervall 0.15
-  "Seconds after which overlays are redrawn and buffers moved.
-This value greatly influences responsiveness and ressource
-consumption."
-  :group 'org-panes
-  :type 'float)
-
 (defcustom org-panes-contents-size 60
   "Percentage of the remaining frame width/height used for the
 contents buffer."
@@ -99,7 +92,6 @@ contents buffer."
 (defvar org-panes-change-string nil)
 (defvar org-panes-min)
 (defvar org-panes-max)
-(defvar org-panes-timer nil)
 (defvar org-panes-edited nil)
 (defvar org-panes-line-pos-list '(0 0 0))
 (defvar org-panes-topic nil)
@@ -133,9 +125,7 @@ buffer is highlighted in the contents and overview buffer."
             (add-hook 'post-command-hook 'org-panes-persist nil t))
           (add-hook 'before-change-functions
                     (lambda (a b) (setq org-panes-edited t)) nil t)
-          (setq org-panes-timer
-                (run-with-idle-timer org-panes-timer-intervall t
-                                     'org-panes-move-point))
+          (add-hook 'post-command-hook 'org-panes-move-point)
           (org-panes-move-point)
           (redisplay)
           (message "org-panes created"))
@@ -196,7 +186,7 @@ buffer is highlighted in the contents and overview buffer."
                              (delete-window))))
                (kill-buffer buf))
              t)))
-  (cancel-timer org-panes-timer)
+  (remove-hook 'post-command-hook 'org-panes-move-point)
   (unless org-panes-persist-panes
     (message "org-panes killed...")))
 
@@ -206,30 +196,28 @@ buffer is highlighted in the contents and overview buffer."
     (if (member (buffer-name) org-panes-list)
         (let ((old-win (selected-window)))
           (when (org-panes-changed-p)
-            (catch 'exit
-              (let ((pos (point))
-                    (win-list (mapcar 'get-buffer-window org-panes-list))
-                    (win (get-buffer-window)))
-                (save-excursion (move-beginning-of-line nil)
-                                (setq pos (point)))
-                (mapc (lambda (x) (when (and x (not (equal x win)))
-                                    (with-selected-window x
-                                      (goto-char pos)
-                                      (move-beginning-of-line nil)
-                                      (when (equal x (nth 2 win-list))
-                                        (set-window-start nil (point))))))
-                      win-list)
-                (when (input-pending-p) (throw 'exit t))
-                (when (nth 2 win-list)
-                  (with-selected-window (nth 2 win-list)
-                    (setq org-panes-min (window-start))
-                    (save-excursion
-                      (goto-char org-panes-min)
-                      (beginning-of-line)
-                      (forward-line (window-body-height))
-                      (setq org-panes-max (1- (point))))))
-                (org-panes-overlay-dispatcher win-list)
-                (setq org-panes-edited nil))))
+            (let ((pos (point))
+                  (win-list (mapcar 'get-buffer-window org-panes-list))
+                  (win (get-buffer-window)))
+              (save-excursion (move-beginning-of-line nil)
+                              (setq pos (point)))
+              (mapc (lambda (x) (when (and x (not (equal x win)))
+                                  (with-selected-window x
+                                    (goto-char pos)
+                                    (move-beginning-of-line nil)
+                                    (when (equal x (nth 2 win-list))
+                                      (set-window-start nil (point))))))
+                    win-list)
+              (when (nth 2 win-list)
+                (with-selected-window (nth 2 win-list)
+                  (setq org-panes-min (window-start))
+                  (save-excursion
+                    (goto-char org-panes-min)
+                    (beginning-of-line)
+                    (forward-line (window-body-height))
+                    (setq org-panes-max (1- (point))))))
+              (org-panes-overlay-dispatcher win-list)
+              (setq org-panes-edited nil)))
           (select-window old-win))
       (when (not (equal "*Org Src"
                         (substring (buffer-name) 0
@@ -250,8 +238,8 @@ necessary."
         (when (and (or (< (point-min) (window-start))
                        (> (point-max) (window-end)))
                    (< 0 (abs (- (nth 1 org-panes-line-pos-list)
-                                (+ (caddr pos) new)))))
-          (setcar (cdr org-panes-line-pos-list) (+ (caddr pos) new))
+                                (+ (car (cdr (cdr pos))) new)))))
+          (setcar (cdr org-panes-line-pos-list) (+ (car (cdr (cdr pos))) new))
           (recenter new)))))
   (when (nth 0 win-list)
     (with-selected-window (nth 0 win-list)
@@ -278,23 +266,28 @@ height of the tree.  Return a suggested value for recenter."
 
 (defun org-panes-changed-p ()
   "Decide whether updating overlays is considered."
-  (let ((old-string org-panes-change-string))
+  (let ((old-string org-panes-change-string)
+        (line-pos (line-number-at-pos))
+        (height (window-body-height)))
     (if (equal (buffer-name) (nth 2 org-panes-list))
-        (save-excursion
-          (end-of-line)
-          (let ((p (point)))
-            (setq org-panes-change-string nil)
-            (goto-char (window-start))
-            (while (re-search-forward "^\\(*+\\) ..." (max (point)
-                                                           (window-end)) t)
-              (setq org-panes-change-string
-                    (concat org-panes-change-string (match-string 0)
-                            (when (and (= (length (match-string 1)) 1)
-                                       (> (match-end 0) p)) "P")))))
-          (when org-panes-change-string
-            (setq org-panes-change-string
-                  (substring-no-properties org-panes-change-string))))
-      (setq org-panes-change-string (line-number-at-pos)))
+        (if (> (abs (- (car (cdr (cdr org-panes-line-pos-list)))
+                       (setcar (cdr (cdr org-panes-line-pos-list))
+                               line-pos)))
+               (/ height 2))
+            (setq org-panes-change-string line-pos)
+          (save-excursion
+            (end-of-line)
+            (let ((p (point)))
+              (setq org-panes-change-string nil)
+              (goto-char (window-start))
+              (while (re-search-forward "^\\(*+\\) ..." (max (point)
+                                                             (window-end)) t)
+                (setq org-panes-change-string
+                      (concat org-panes-change-string
+                              (match-string-no-properties 0)
+                              (when (and (= (length (match-string 1)) 1)
+                                         (> (match-end 0) p)) "P")))))))
+      (setq org-panes-change-string line-pos))
     (unless (equal old-string org-panes-change-string) t)))
 
 (defun org-panes-center (limit)
