@@ -17,6 +17,7 @@
 ;; Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 ;; Author: Florian Knupfer
+;; email: (rot13 "sxahcsre@tznvy.pbz")
 
 ;; This file provides a customizable `org-panes' function, which turns
 ;; an org-file into a three pane view.  Thereby your movement of point
@@ -27,6 +28,9 @@
 ;; screenshots:
 ;; http://i.imgur.com/IHpX57b.png
 ;; http://i.imgur.com/Zrhc7lG.png
+
+;; Bugs and feature requests can be send via
+;; https://github.com/knupfer/org-panes or directly using email.
 
 
 ;;; Code:
