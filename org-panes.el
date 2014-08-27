@@ -90,8 +90,8 @@ contents buffer."
   :group 'org-panes)
 
 (defvar org-panes-change-string nil)
-(defvar org-panes-min)
-(defvar org-panes-max)
+(defvar org-panes-min nil)
+(defvar org-panes-max nil)
 (defvar org-panes-edited nil)
 (defvar org-panes-line-pos-list '(0 0 0))
 (defvar org-panes-topic nil)
@@ -111,15 +111,10 @@ buffer is highlighted in the contents and overview buffer."
                                  (list (concat b ":OVERVIEW")
                                        (concat b ":CONTENTS")
                                        b)))
-          (setq org-panes-min (window-start)
-                org-panes-max (window-end)
-                org-panes-edited t
+          ;; center overview
+          (setq org-panes-edited t
+                ;; hide other trees
                 org-panes-topic nil)
-          (save-excursion
-            (goto-char org-panes-min)
-            (beginning-of-line)
-            (forward-line (window-body-height))
-            (setq org-panes-max (1- (point))))
           (org-panes-establish-layout)
           (when org-panes-persist-panes
             (add-hook 'post-command-hook 'org-panes-persist nil t))
@@ -138,35 +133,29 @@ buffer is highlighted in the contents and overview buffer."
 
 (defun org-panes-establish-layout ()
   "Split and clone frames.  Fold org structures."
-  (let ((width (window-body-width))
-        (height (window-body-height))
-        (win-ov (get-buffer-window))
-        win-co win-al)
-    (setq win-al (split-window-right (/ (* width org-panes-main-size) -100)))
-    (setq win-co (if org-panes-split-overview-horizontally
+  (let* ((width (window-body-width))
+         (height (window-body-height))
+         (win-al (split-window-right (/ (* width org-panes-main-size) -100)))
+         (win-co (if org-panes-split-overview-horizontally
                      (split-window-below)
                    (split-window-right (/ (* width org-panes-contents-size)
-                                          -200))))
-    (with-selected-window win-co
-      (clone-indirect-buffer (nth 1 org-panes-list) nil)
-      (switch-to-buffer (nth 1 org-panes-list) nil t)
-      (visual-line-mode -1)
-      (hide-sublevels org-panes-contents-depth)
-      (setq-local cursor-in-non-selected-windows nil)
-      (org-panes--make-overlay))
-    (with-selected-window win-ov
-      (clone-indirect-buffer (nth 0 org-panes-list) nil)
-      (switch-to-buffer (nth 0 org-panes-list) nil t)
-      (visual-line-mode -1)
-      (hide-sublevels org-panes-overview-depth)
-      (if org-panes-split-overview-horizontally
-          (window-resize nil (+ (/ (* height org-panes-contents-size) -100)
-                                (/ height 2))))
-      (setq-local cursor-in-non-selected-windows nil)
-      (org-panes--make-overlay))
+                                          -200)))))
+    (org-panes-window-layout (car org-panes-list) org-panes-overview-depth)
+    (if org-panes-split-overview-horizontally
+        (window-resize nil (+ (/ (* height org-panes-contents-size) -100)
+                              (/ height 2))))
+    (select-window win-co)
+    (org-panes-window-layout (cadr org-panes-list) org-panes-contents-depth)
     (select-window win-al)
     (show-all)
-    (setq-local cursor-in-non-selected-windows nil)))
+    (org-panes-move-point)))
+
+(defun org-panes-window-layout (buf depth)
+  (clone-indirect-buffer buf nil)
+  (switch-to-buffer buf nil t)
+  (visual-line-mode -1)
+  (hide-sublevels depth)
+  (setq-local cursor-in-non-selected-windows nil))
 
 (defun org-panes-persist ()
   "Respawn panes upon visit."
