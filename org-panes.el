@@ -170,11 +170,8 @@ buffer is highlighted in the contents and overview buffer."
              (when (and buf (get-buffer buf))
                (let ((win (get-buffer-window buf)))
                  (when win (with-selected-window win
-                             (org-panes--remove-overlay 'org-panes-highlight)
-                             (org-panes--remove-overlay 'org-panes-padding)
                              (delete-window))))
-               (kill-buffer buf))
-             t)))
+               (kill-buffer buf)) t)))
   (remove-hook 'post-command-hook 'org-panes-move-point)
   (unless org-panes-persist-panes
     (message "org-panes killed...")))
@@ -344,18 +341,8 @@ overview tree."
 
 (defun org-panes--remove-overlay (tag)
   "Delete all overlays in current buffer."
-  (dolist (ov (org-panes--active-overlays tag))
-    (delete-overlay ov)))
+  (remove-overlays nil nil 'category tag))
 
-(defun org-panes--active-overlays (tag)
-  "Collect all overlays in current buffer."
-  (let ((del-from (point-min))
-        (del-to (point-max)))
-    (delq nil (mapcar (lambda (ov)
-                        (and (eq (overlay-get ov 'category)
-                                 tag)
-                             ov))
-                      (overlays-in del-from del-to)))))
 
 (provide 'org-panes)
 
