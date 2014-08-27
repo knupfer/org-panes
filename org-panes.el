@@ -187,13 +187,14 @@ buffer is highlighted in the contents and overview buffer."
 (defun org-panes-stop-panes ()
   "Kill all panes and clean up."
   (while (let ((buf (pop org-panes-list)))
-           (when (and buf (get-buffer buf))
-             (let ((win (get-buffer-window buf)))
-               (when win (with-selected-window win
-                           (org-panes--remove-overlay 'org-panes-highlight)
-                           (org-panes--remove-overlay 'org-panes-padding)))))
-           (when (car org-panes-list)
-             (kill-buffer buf) t)))
+           (when org-panes-list
+             (when (and buf (get-buffer buf))
+               (let ((win (get-buffer-window buf)))
+                 (when win (with-selected-window win
+                             (org-panes--remove-overlay 'org-panes-highlight)
+                             (org-panes--remove-overlay 'org-panes-padding))))
+               (kill-buffer buf))
+             t)))
   (delete-other-windows)
   (cancel-timer org-panes-timer)
   (unless org-panes-persist-panes
