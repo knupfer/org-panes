@@ -145,24 +145,30 @@ buffer is highlighted in the contents and overview buffer."
 (defun org-panes-establish-layout ()
   "Split and clone frames.  Fold org structures."
   (let ((width (window-body-width))
-        (height (window-body-height)))
-    (split-window-right (/ (* width org-panes-main-size) -100))
-    (if org-panes-split-overview-horizontally
-        (split-window-below)
-      (split-window-right (/ (* width org-panes-contents-size) -200)))
-    (other-window -1)
-    (clone-indirect-buffer (nth 1 org-panes-list) t)
-    (hide-sublevels org-panes-contents-depth)
-    (setq-local cursor-in-non-selected-windows nil)
-    (org-panes--make-overlay)
-    (clone-indirect-buffer (nth 0 org-panes-list) t)
-    (hide-sublevels org-panes-overview-depth)
-    (if org-panes-split-overview-horizontally
-        (window-resize nil (+ (/ (* height org-panes-contents-size) -100)
-                              (/ height 2))))
-    (setq-local cursor-in-non-selected-windows nil)
-    (org-panes--make-overlay)
-    (other-window -1)
+        (height (window-body-height))
+        (win-ov (get-buffer-window))
+        win-co win-al)
+    (setq win-al (split-window-right (/ (* width org-panes-main-size) -100)))
+    (setq win-co (if org-panes-split-overview-horizontally
+                     (split-window-below)
+                   (split-window-right (/ (* width org-panes-contents-size)
+                                          -200))))
+    (with-selected-window win-co
+      (clone-indirect-buffer (nth 1 org-panes-list) nil)
+      (switch-to-buffer (nth 1 org-panes-list) nil t)
+      (hide-sublevels org-panes-contents-depth)
+      (setq-local cursor-in-non-selected-windows nil)
+      (org-panes--make-overlay))
+    (with-selected-window win-ov
+      (clone-indirect-buffer (nth 0 org-panes-list) nil)
+      (switch-to-buffer (nth 0 org-panes-list) nil t)
+      (hide-sublevels org-panes-overview-depth)
+      (if org-panes-split-overview-horizontally
+          (window-resize nil (+ (/ (* height org-panes-contents-size) -100)
+                                (/ height 2))))
+      (setq-local cursor-in-non-selected-windows nil)
+      (org-panes--make-overlay))
+    (select-window win-al)
     (show-all)
     (setq-local cursor-in-non-selected-windows nil)))
 
