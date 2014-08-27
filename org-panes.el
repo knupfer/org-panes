@@ -192,10 +192,10 @@ buffer is highlighted in the contents and overview buffer."
                (let ((win (get-buffer-window buf)))
                  (when win (with-selected-window win
                              (org-panes--remove-overlay 'org-panes-highlight)
-                             (org-panes--remove-overlay 'org-panes-padding))))
+                             (org-panes--remove-overlay 'org-panes-padding)
+                             (delete-window))))
                (kill-buffer buf))
              t)))
-  (delete-other-windows)
   (cancel-timer org-panes-timer)
   (unless org-panes-persist-panes
     (message "org-panes killed...")))
