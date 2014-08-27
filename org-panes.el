@@ -156,12 +156,14 @@ buffer is highlighted in the contents and overview buffer."
     (with-selected-window win-co
       (clone-indirect-buffer (nth 1 org-panes-list) nil)
       (switch-to-buffer (nth 1 org-panes-list) nil t)
+      (visual-line-mode -1)
       (hide-sublevels org-panes-contents-depth)
       (setq-local cursor-in-non-selected-windows nil)
       (org-panes--make-overlay))
     (with-selected-window win-ov
       (clone-indirect-buffer (nth 0 org-panes-list) nil)
       (switch-to-buffer (nth 0 org-panes-list) nil t)
+      (visual-line-mode -1)
       (hide-sublevels org-panes-overview-depth)
       (if org-panes-split-overview-horizontally
           (window-resize nil (+ (/ (* height org-panes-contents-size) -100)
