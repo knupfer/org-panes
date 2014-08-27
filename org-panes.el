@@ -249,9 +249,9 @@ necessary."
              (new (org-panes-centering-position pos)))
         (when (and (or (< (point-min) (window-start))
                        (> (point-max) (window-end)))
-                   ;;(< 1 (abs (- (nth 1 org-panes-line-pos-list) new)))
-                   )
-          (setcar (cdr org-panes-line-pos-list) new)
+                   (< 0 (abs (- (nth 1 org-panes-line-pos-list)
+                                (+ (caddr pos) new)))))
+          (setcar (cdr org-panes-line-pos-list) (+ (caddr pos) new))
           (recenter new)))))
   (when (nth 0 win-list)
     (with-selected-window (nth 0 win-list)
@@ -358,7 +358,7 @@ overview tree."
             (when (< p old-point)
               (setq point-pos (+ 1 point-pos))))))
       (when update-topic (setq org-panes-topic topic))
-      (list point-pos tree-size))))
+      (list point-pos tree-size tree-start))))
 
 (defun org-panes--remove-overlay (tag)
   "Delete all overlays in current buffer."
