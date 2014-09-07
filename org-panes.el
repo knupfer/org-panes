@@ -19,6 +19,8 @@
 ;; Author: Florian Knupfer
 ;; email: (rot13 "sxahcsre@tznvy.pbz")
 
+;;; Commentary:
+
 ;; This file provides a customizable `org-panes' function, which turns
 ;; an org-file into a three pane view.  Thereby your movement of point
 ;; is reflected in all panes and you can all three panes to navigate.
@@ -32,11 +34,12 @@
 ;; Bugs and feature requests can be send via
 ;; https://github.com/knupfer/org-panes or directly using email.
 
-
 ;;; Code:
 
+(require 'org)
+
 (defgroup org-panes nil
-  "show multiple panes of the document"
+  "Show multiple panes of the org file."
   :group 'org-mode)
 
 (defcustom org-panes-overview-depth 1
@@ -50,21 +53,25 @@
   :type 'integer)
 
 (defcustom org-panes-split-overview-horizontally nil
-  "Change the split behaviour of the overview and the contents
-buffer.  The show all buffer is always split vertically because
-of the bigger space needs."
+  "Split behaviour of the overview and the contents buffer.
+
+The show all buffer is always split vertically because of the
+bigger space needs."
   :group 'org-panes
   :type 'boolean)
 
 (defcustom org-panes-force-centering-text-vertically t
-  "When non-nil adds padding to overview and contents buffer to
-be able to center point even when there aren't enough headings."
+  "Add padding to overview and contents buffer.
+
+This enables to center point even when there aren't enough
+headings."
   :group 'org-panes
   :type 'boolean)
 
 (defcustom org-panes-persist-panes t
-  "When non-nil create automatically new panes when revisiting
-buffer unless org-panes is called another time."
+  "Create automatically new panes when revisiting buffer.
+
+Call org-panes to kill panes."
   :group 'org-panes
   :type 'boolean)
 
@@ -74,8 +81,9 @@ buffer unless org-panes is called another time."
   :type 'integer)
 
 (defcustom org-panes-contents-size 60
-  "Percentage of the remaining frame width/height used for the
-contents buffer."
+  "Size of the contents buffer width/height.
+
+A value of 50 uses the half of the available space."
   :group 'org-panes
   :type 'integer)
 
@@ -98,12 +106,14 @@ contents buffer."
 (defvar org-panes-list nil)
 
 (defun org-panes ()
-  "Make different panes for an org-mode file.  Current point is
-shared between the buffers and the visible part in the show all
-buffer is highlighted in the contents and overview buffer."
+  "Make different panes for an `org-mode' file.
+
+Current point is shared between the buffers and the visible part
+in the show all buffer is highlighted in the contents and
+overview buffer."
   (interactive)
   (if (not (equal major-mode 'org-mode))
-      (error "this is not an org file")
+      (error "This is not an org file")
     (if (not org-panes-list)
         (progn
           (delete-other-windows)
@@ -151,6 +161,10 @@ buffer is highlighted in the contents and overview buffer."
     (org-panes-move-point)))
 
 (defun org-panes-window-layout (buf depth)
+  "Clone current buffer and apply org stuff.
+
+Cloned buffer will be called BUF and the structure shown up to
+the level DEPTH."
   (clone-indirect-buffer buf nil)
   (switch-to-buffer buf nil t)
   (visual-line-mode -1)
@@ -205,8 +219,7 @@ buffer is highlighted in the contents and overview buffer."
         (org-panes-stop-panes)))))
 
 (defun org-panes-overlay-dispatcher (win-list)
-  "Take a list of windows and apply overlay functions, when
-necessary."
+  "Take a list of windows WIN-LIST and apply overlay functions."
   (when (cadr win-list)
     (with-selected-window (cadr win-list)
       (org-panes--remove-overlay 'org-panes-highlight)
@@ -236,8 +249,9 @@ necessary."
       (org-panes--make-overlay t))))
 
 (defun org-panes-centering-position (pos)
-  "Take a list with the position of point in a tree and the
-height of the tree.  Return a suggested value for recenter."
+  "Take a list POS with the position of point in a tree.
+
+Return a suggested value for `recenter'."
   (- (round (min (/ (* 0.5 (window-body-height) (car pos)) (cadr pos))
                  (car pos)))
      (round (/ (+ (window-body-height) (min (* 0.5 (window-body-height))
@@ -269,20 +283,27 @@ height of the tree.  Return a suggested value for recenter."
       (setq org-panes-change-string line-pos))
     (unless (equal old-string org-panes-change-string) t)))
 
-(defun org-panes-center (limit)
-  "Add padding to overview and contents to allow centering."
+(defun org-panes-center (depth)
+  "Add padding to overview and contents to allow centering.
+
+DEPTH is the deepest level shown in the buffer."
   (when org-panes-force-centering-text-vertically
     (let ((len 0))
       (save-excursion (goto-char (point-min))
                       (while (re-search-forward "^\\(*+\\) " nil t)
-                        (when (<= (- (match-end 1) (match-beginning 1)) limit)
+                        (when (<= (- (match-end 1) (match-beginning 1)) depth)
                           (setq len (1+ len)))))
       (when (< 0 (setq len (/ (- (window-body-height) len) 2)))
         (let ((ov (make-overlay 0 0)))
           (overlay-put ov 'category 'org-panes-padding)
           (overlay-put ov 'before-string (make-string len ?\n)))))))
 
-(defun org-panes-analyse-tree (a)
+(defun org-panes-analyse-tree (winbegin)
+  "Retrieve start topic and end of current tree.
+
+The start is only the start of the tree if it is before WINBEGIN,
+if not it is WINBEGIN, which is the beginning of the current
+window."
   (let (start topic (end (point-max)))
     (end-of-line)
     (re-search-backward "^* " nil t)
@@ -293,14 +314,16 @@ height of the tree.  Return a suggested value for recenter."
         (setq topic (concat topic (match-string 0)))
         (setq end (progn (beginning-of-line) (point)))))
     (if (equal topic org-panes-topic)
-        (progn (setq topic nil) (goto-char (min a start)))
+        (progn (setq topic nil) (goto-char (min winbegin start)))
       (goto-char (point-min))
       (org-panes--remove-overlay 'org-panes-hide))
     (list start topic end)))
 
 (defun org-panes--make-overlay (&optional update-topic)
-  "Put the different overlays for highlighting and return size of
-overview tree."
+  "Put the different overlays for highlighting.
+
+It returns the size of the overview tree.  Change topic if the
+topic has changed and UPDATE-TOPIC is non-nil."
   (save-excursion
     (let* ((a (min (point) org-panes-min))
            (b (max (point) org-panes-max))
@@ -327,7 +350,7 @@ overview tree."
       (list point-pos tree-size start))))
 
 (defun org-panes--remove-overlay (tag)
-  "Delete all overlays in current buffer."
+  "Delete all overlays with TAG in current buffer."
   (remove-overlays nil nil 'category tag))
 
 (provide 'org-panes)
