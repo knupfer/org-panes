@@ -1,4 +1,4 @@
-;;; org-panes.el --- show an org-file in three panes
+;;; org-panes.el --- show an org-file in three panes -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014 Florian Knupfer
 
@@ -105,6 +105,7 @@ A value of 50 uses the half of the available space."
 (defvar org-panes-topic nil)
 (defvar org-panes-list nil)
 
+;;;###autoload
 (defun org-panes ()
   "Make different panes for an `org-mode' file.
 
